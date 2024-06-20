@@ -4,14 +4,13 @@ import re
 import os
 import argparse
 import concurrent.futures
-from api_handlers import alpha, beta, gamma, delta, theta
+from api_handlers import alpha, beta, gamma, delta, theta, crackstation, hashes_org
 
 # Argument parser setup
 parser = argparse.ArgumentParser(description='Advanced Hash Cracker')
 parser.add_argument('-s', help='hash', dest='hash')
 parser.add_argument('-f', help='file containing hashes', dest='file')
 parser.add_argument('-d', help='directory containing hashes', dest='dir')
-parser.add_argument('-w', help='wordlist file', dest='wordlist')
 parser.add_argument('-t', help='number of threads', dest='threads', type=int, default=4)
 args = parser.parse_args()
 
@@ -25,20 +24,19 @@ good = '\033[92m[+]\033[0m'
 bad = '\033[91m[-]\033[0m'
 
 cwd = os.getcwd()
-directory = os.path.abspath(args.dir) if args.dir else None
+directory = args.dir
 file = args.file
-wordlist = args.wordlist
 thread_count = args.threads
 
 if directory and directory[-1] == '/':
     directory = directory[:-1]
 
 # Hash functions lists
-md5 = [gamma, alpha, beta, theta, delta]
-sha1 = [alpha, beta, theta, delta]
-sha256 = [alpha, beta, theta]
-sha384 = [alpha, beta, theta]
-sha512 = [alpha, beta, theta]
+md5 = [gamma, alpha, beta, theta, delta, crackstation, hashes_org]
+sha1 = [alpha, beta, theta, delta, crackstation, hashes_org]
+sha256 = [alpha, beta, theta, crackstation, hashes_org]
+sha384 = [alpha, beta, theta, crackstation, hashes_org]
+sha512 = [alpha, beta, theta, crackstation, hashes_org]
 
 # Crack function to identify and use appropriate hash functions
 def crack(hashvalue):
@@ -100,16 +98,6 @@ def single(args):
     else:
         print(f'{bad} Hash was not found in any database.')
 
-# Brute-force function using a wordlist
-def brute_force(hashvalue, hash_funcs, wordlist):
-    with open(wordlist, 'r') as wl:
-        for word in wl:
-            word = word.strip()
-            for hash_func in hash_funcs:
-                if hash_func(word.encode()).hexdigest() == hashvalue:
-                    return word
-    return False
-
 # Main script execution
 if directory:
     try:
@@ -127,21 +115,3 @@ elif file:
     print(f'{info} Results saved in cracked-{file.split("/")[-1]}')
 elif args.hash:
     single(args)
-elif args.hash and wordlist:
-    hashvalue = args.hash
-    hash_funcs = {
-        32: [lambda x: hashlib.md5(x)],
-        40: [lambda x: hashlib.sha1(x)],
-        64: [lambda x: hashlib.sha256(x)],
-        96: [lambda x: hashlib.sha384(x)],
-        128: [lambda x: hashlib.sha512(x)]
-    }
-    length = len(hashvalue)
-    if length in hash_funcs:
-        result = brute_force(hashvalue, hash_funcs[length], wordlist)
-        if result:
-            print(f'{good} Found: {result}')
-        else:
-            print(f'{bad} No match found.')
-    else:
-        print(f'{bad} Unsupported hash length.')

@@ -19,3 +19,17 @@ def delta(hashvalue, hashtype):
 def theta(hashvalue, hashtype):
     response = requests.get(f'https://md5decrypt.net/Api/api.php?hash={hashvalue}&hash_type={hashtype}&email=your_email@domain.com&code=your_api_code').text
     return response if len(response) != 0 else False
+
+def crackstation(hashvalue):
+    response = requests.post(
+        'https://crackstation.net/',
+        data={'hashes': hashvalue, 'decrypt': 'Crack Hashes!'}
+    ).text
+    match = re.search(r'Hash result: <b>(.*?)</b>', response)
+    return match.group(1) if match else False
+
+def hashes_org(hashvalue):
+    response = requests.get(f'https://hashes.org/api.php?hash={hashvalue}').json()
+    if response['result'] == 'found':
+        return response['plain']
+    return False
