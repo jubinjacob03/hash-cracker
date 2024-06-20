@@ -1,6 +1,12 @@
+import warnings
 import requests
 import re
 
+# Suppress only the single InsecureRequestWarning from urllib3 needed
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+# Define API handlers
 def alpha(hashvalue, hashtype):
     return False
 
