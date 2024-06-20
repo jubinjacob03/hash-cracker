@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
 
+from api_handlers import gamma, alpha, beta, theta, delta, crackstation, hashes_org
 import re
 import os
-import argparse
 import concurrent.futures
-from api_handlers import alpha, beta, gamma, delta, theta, crackstation, hashes_org
+from tkinter import filedialog
+import tkinter as tk
 
-# Argument parser setup
-parser = argparse.ArgumentParser(description='Advanced Hash Cracker')
-parser.add_argument('-s', help='hash', dest='hash')
-parser.add_argument('-f', help='file containing hashes', dest='file')
-parser.add_argument('-d', help='directory containing hashes', dest='dir')
-parser.add_argument('-t', help='number of threads', dest='threads', type=int, default=4)
-args = parser.parse_args()
-
-# Terminal colors for output
+# Terminal badges for output
 end = '\033[0m'
 red = '\033[91m'
 green = '\033[92m'
@@ -22,14 +15,6 @@ yellow = '\033[93m'
 info = '\033[93m[!]\033[0m'
 good = '\033[92m[+]\033[0m'
 bad = '\033[91m[-]\033[0m'
-
-cwd = os.getcwd()
-directory = args.dir
-file = args.file
-thread_count = args.threads
-
-if directory and directory[-1] == '/':
-    directory = directory[:-1]
 
 # Hash functions lists
 md5 = [gamma, alpha, beta, theta, delta, crackstation, hashes_org]
@@ -52,11 +37,13 @@ def crack(hashvalue):
         print(f'{info} Hash function : {length_to_funcs[hash_length][0]}')
         for api in length_to_funcs[hash_length][1]:
             r = api(hashvalue, length_to_funcs[hash_length][0].lower())
-            if r:
+            if r is not None:  # Check if r is not None or not an error indicator
                 return r
+        print(f'{bad} Hash not found in any database.')
     else:
         print(f'{bad} This hash type is not supported.')
-        return False
+    return None
+
 
 # Results dictionary
 result = {}
@@ -65,53 +52,87 @@ result = {}
 def threaded(hashvalue):
     resp = crack(hashvalue)
     if resp:
-        print(f'Original word : {resp}')
+        print(f'{good} Original word : {resp}')
         result[hashvalue] = resp
+    else:
+        print(f'{bad} Hash was not found.')
 
 # Function to search for hashes in directory
 def grepper(directory):
     os.system(rf'''grep -Pr "[a-f0-9]{{128}}|[a-f0-9]{{96}}|[a-f0-9]{{64}}|[a-f0-9]{{40}}|[a-f0-9]{{32}}" {directory} --exclude=\*.{{png,jpg,jpeg,mp3,mp4,zip,gz}} |
-        grep -Po "[a-f0-9]{{128}}|[a-f0-9]{{96}}|[a-f0-9]{{64}}|[a-f0-9]{{40}}|[a-f0-9]{{32}}" >> {cwd}/{directory.split('/')[-1]}.txt''')
+        grep -Po "[a-f0-9]{{128}}|[a-f0-9]{{96}}|[a-f0-9]{{64}}|[a-f0-9]{{40}}|[a-f0-9]{{32}}" >> {os.getcwd()}/{directory.split('/')[-1]}.txt''')
     print(f'{info} Results saved in {directory.split("/")[-1]}.txt')
 
 # Function to mine hashes from file
-def miner(file):
+def miner(file, thread_count):
     lines = []
     found = set()
     with open(file, 'r') as f:
         lines = [line.strip('\n') for line in f]
     for line in lines:
-        matches = re.findall(r'[a-f0-9]{128}|[a-f0-9]{96}|[a-f0-9]{64}|[a-f0-9]{40}|[a-f0-9]{32}', line)
+        matches = re.findall(
+            r'[a-f0-9]{128}|[a-f0-9]{96}|[a-f0-9]{64}|[a-f0-9]{40}|[a-f0-9]{32}', line)
         found.update(matches)
     print(f'{info} Hashes found: {len(found)}')
-    threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=thread_count)
+    threadpool = concurrent.futures.ThreadPoolExecutor(
+        max_workers=thread_count)
     futures = [threadpool.submit(threaded, hashvalue) for hashvalue in found]
     for i, _ in enumerate(concurrent.futures.as_completed(futures)):
         if i + 1 == len(found) or (i + 1) % thread_count == 0:
             print(f'{info} Progress: {i + 1}/{len(found)}', end='\r')
+    print("\n\n")
 
 # Function for single hash cracking
-def single(args):
-    result = crack(args.hash)
+def single(hashvalue):
+    result = crack(hashvalue)
     if result:
-        print(f'Original word : {result}')
+        print(f'{good} Original word : {result}')
     else:
         print(f'{bad} Hash was not found in any database.')
 
-# Main script execution
-if directory:
-    try:
-        grepper(directory)
-    except KeyboardInterrupt:
-        pass
-elif file:
-    try:
-        miner(file)
-    except KeyboardInterrupt:
-        pass
-    with open(f'cracked-{file.split("/")[-1]}', 'w+') as f:
-        for hashvalue, cracked in result.items():
-            f.write(f'{hashvalue}:{cracked}\n')
-    print(f'{info} Results saved in cracked-{file.split("/")[-1]}')
-elif args.hash:
-    single(args)
+# Function to display the menu
+def display_menu():
+    print()
+    print("╔═══════════════════════════════╗")
+    print("║        Hash cracker v2        ║")
+    print("╠═══════════════════════════════╣")
+    print("║  1. Crack a single hash       ║")
+    print("║  2. Crack hashes from a file  ║")
+    print("║  3. Search hashes in a dir    ║")
+    print("║  4. Exit                      ║")
+    print("╚═══════════════════════════════╝")
+
+# Main function
+def main():
+    while True:
+        display_menu()
+        choice = input(f"{info} Enter your choice (1-4): ")
+
+        if choice == '1':
+            hashvalue = input(f"{info} Enter the hash to crack: ")
+            single(hashvalue)
+        elif choice == '2':
+            root = tk.Tk()
+            root.withdraw()
+            file_path = filedialog.askopenfilename(
+                filetypes=[("Text files", "*.txt")])
+            if file_path:
+                thread_count = input(
+                    f"{info} Enter the number of threads (default is 4): ")
+                thread_count = int(
+                    thread_count) if thread_count.isdigit() else 4
+                miner(file_path, thread_count)
+            else:
+                print(f"{bad} No file selected.")
+        elif choice == '3':
+            directory_path = input(f"{info} Enter the path to the directory: ")
+            grepper(directory_path)
+        elif choice == '4':
+            print(f"{info} Exiting...")
+            break
+        else:
+            print(f"{bad} Invalid choice. Please enter a number between 1 and 4.")
+
+
+if __name__ == '__main__':
+    main()
