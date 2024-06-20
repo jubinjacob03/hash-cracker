@@ -65,7 +65,7 @@ result = {}
 def threaded(hashvalue):
     resp = crack(hashvalue)
     if resp:
-        print(f'{hashvalue} : {resp}')
+        print(f'Original word : {resp}')
         result[hashvalue] = resp
 
 # Function to search for hashes in directory
@@ -94,7 +94,7 @@ def miner(file):
 def single(args):
     result = crack(args.hash)
     if result:
-        print(result)
+        print(f'Original word : {result}')
     else:
         print(f'{bad} Hash was not found in any database.')
 

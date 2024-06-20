@@ -13,8 +13,21 @@ An advanced hash cracking tool with support for multiple hashing algorithms, mul
 2. Install the required packages
 ```sh
 pip install -r requirements.txt
+```
 
+## Usage
+
+- python hash_cracker.py -s <hash>
+
+```sh
 python hash_cracker.py -s 5f4dcc3b5aa765d61d8327deb882cf99
+```
+```sh
 python hash_cracker.py -f hashes.txt
+```
+```sh
 python hash_cracker.py -d /path/to/directory
+```
+```sh
 python hash_cracker.py -s 5f4dcc3b5aa765d61d8327deb882cf99 -w wordlist.txt
+```
