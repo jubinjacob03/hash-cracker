@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-from api_handlers import gamma, alpha, beta, theta, delta, crackstation, hashes_org
-import re
 import os
 import concurrent.futures
-from tkinter import filedialog
+import re
 import tkinter as tk
+from tkinter import filedialog
+from api_handlers import gamma, alpha, beta, theta, delta, crackstation, hashes_org
+import sys
 
 # Terminal badges for output
 end = '\033[0m'
@@ -44,27 +45,8 @@ def crack(hashvalue):
         print(f'{bad} This hash type is not supported.')
     return None
 
-
-# Results dictionary
-result = {}
-
-# Threaded cracking function
-def threaded(hashvalue):
-    resp = crack(hashvalue)
-    if resp:
-        print(f'{good} Original word : {resp}')
-        result[hashvalue] = resp
-    else:
-        print(f'{bad} Hash was not found.')
-
-# Function to search for hashes in directory
-def grepper(directory):
-    os.system(rf'''grep -Pr "[a-f0-9]{{128}}|[a-f0-9]{{96}}|[a-f0-9]{{64}}|[a-f0-9]{{40}}|[a-f0-9]{{32}}" {directory} --exclude=\*.{{png,jpg,jpeg,mp3,mp4,zip,gz}} |
-        grep -Po "[a-f0-9]{{128}}|[a-f0-9]{{96}}|[a-f0-9]{{64}}|[a-f0-9]{{40}}|[a-f0-9]{{32}}" >> {os.getcwd()}/{directory.split('/')[-1]}.txt''')
-    print(f'{info} Results saved in {directory.split("/")[-1]}.txt')
-
 # Function to mine hashes from file
-def miner(file, thread_count):
+def miner(file, thread_count=4):
     lines = []
     found = set()
     with open(file, 'r') as f:
@@ -98,15 +80,22 @@ def display_menu():
     print("╠═══════════════════════════════╣")
     print("║  1. Crack a single hash       ║")
     print("║  2. Crack hashes from a file  ║")
-    print("║  3. Search hashes in a dir    ║")
-    print("║  4. Exit                      ║")
+    print("║  3. Exit                      ║")
     print("╚═══════════════════════════════╝")
 
 # Main function
 def main():
+    if not sys.stdin.isatty():
+        # Non-interactive mode (build environment on Render, etc.)
+        default_file_path = "/path/to/default_file.txt"
+        thread_count = os.getenv("THREAD_COUNT", 4)  # Default thread count
+        miner(default_file_path, thread_count)
+        return
+
+    # Interactive mode (local machine, etc.)
     while True:
         display_menu()
-        choice = input(f"{info} Enter your choice (1-4): ")
+        choice = input(f"{info} Enter your choice (1-3): ")
 
         if choice == '1':
             hashvalue = input(f"{info} Enter the hash to crack: ")
@@ -125,14 +114,10 @@ def main():
             else:
                 print(f"{bad} No file selected.")
         elif choice == '3':
-            directory_path = input(f"{info} Enter the path to the directory: ")
-            grepper(directory_path)
-        elif choice == '4':
             print(f"{info} Exiting...")
             break
         else:
-            print(f"{bad} Invalid choice. Please enter a number between 1 and 4.")
-
+            print(f"{bad} Invalid choice. Please enter a number between 1 and 3.")
 
 if __name__ == '__main__':
     main()

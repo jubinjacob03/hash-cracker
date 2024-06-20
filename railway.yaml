@@ -1,7 +1,0 @@
-version: 1
-services:
-  web:
-    image: 'railway/python:3.9'  # Replace with the appropriate Python version
-    commands:
-      - pip install -r requirements.txt  # Install dependencies
-      - python hash_cracker.py   # Command to execute your script
