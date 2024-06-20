@@ -17,7 +17,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-- python hash_cracker.py -s <hash>
+- python hash_cracker.py -s {hash}
 
 ```sh
 python hash_cracker.py -s 5f4dcc3b5aa765d61d8327deb882cf99
