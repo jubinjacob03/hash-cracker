@@ -4,21 +4,26 @@ from api_handlers import gamma, alpha, beta, theta, delta, crackstation, hashes_
 import re
 import os
 import concurrent.futures
-import argparse  
+from tkinter import filedialog
+import tkinter as tk
 
 # Terminal badges for output
+end = '\033[0m'
+red = '\033[91m'
+green = '\033[92m'
+yellow = '\033[93m'
 info = '\033[93m[!]\033[0m'
 good = '\033[92m[+]\033[0m'
 bad = '\033[91m[-]\033[0m'
 
-# Hash functions lists 
+# Hash functions lists
 md5 = [gamma, alpha, beta, theta, delta, crackstation, hashes_org]
 sha1 = [alpha, beta, theta, delta, crackstation, hashes_org]
 sha256 = [alpha, beta, theta, crackstation, hashes_org]
 sha384 = [alpha, beta, theta, crackstation, hashes_org]
 sha512 = [alpha, beta, theta, crackstation, hashes_org]
 
-# Crack function to identify and use appropriate hash functions 
+# Crack function to identify and use appropriate hash functions
 def crack(hashvalue):
     length_to_funcs = {
         32: ('MD5', md5),
@@ -32,17 +37,18 @@ def crack(hashvalue):
         print(f'{info} Hash function : {length_to_funcs[hash_length][0]}')
         for api in length_to_funcs[hash_length][1]:
             r = api(hashvalue, length_to_funcs[hash_length][0].lower())
-            if r is not None:  
+            if r is not None:  # Check if r is not None or not an error indicator
                 return r
         print(f'{bad} Hash not found in any database.')
     else:
         print(f'{bad} This hash type is not supported.')
     return None
 
-# Results dictionary 
+
+# Results dictionary
 result = {}
 
-# Threaded cracking function 
+# Threaded cracking function
 def threaded(hashvalue):
     resp = crack(hashvalue)
     if resp:
@@ -51,11 +57,17 @@ def threaded(hashvalue):
     else:
         print(f'{bad} Hash was not found.')
 
+# Function to search for hashes in directory
+def grepper(directory):
+    os.system(rf'''grep -Pr "[a-f0-9]{{128}}|[a-f0-9]{{96}}|[a-f0-9]{{64}}|[a-f0-9]{{40}}|[a-f0-9]{{32}}" {directory} --exclude=\*.{{png,jpg,jpeg,mp3,mp4,zip,gz}} |
+        grep -Po "[a-f0-9]{{128}}|[a-f0-9]{{96}}|[a-f0-9]{{64}}|[a-f0-9]{{40}}|[a-f0-9]{{32}}" >> {os.getcwd()}/{directory.split('/')[-1]}.txt''')
+    print(f'{info} Results saved in {directory.split("/")[-1]}.txt')
+
 # Function to mine hashes from file
-def miner(file_path, thread_count):
+def miner(file, thread_count):
     lines = []
     found = set()
-    with open(file_path, 'r') as f:
+    with open(file, 'r') as f:
         lines = [line.strip('\n') for line in f]
     for line in lines:
         matches = re.findall(
@@ -70,7 +82,7 @@ def miner(file_path, thread_count):
             print(f'{info} Progress: {i + 1}/{len(found)}', end='\r')
     print("\n\n")
 
-# Function for single hash cracking 
+# Function for single hash cracking
 def single(hashvalue):
     result = crack(hashvalue)
     if result:
@@ -86,41 +98,41 @@ def display_menu():
     print("╠═══════════════════════════════╣")
     print("║  1. Crack a single hash       ║")
     print("║  2. Crack hashes from a file  ║")
-    print("║  3. Exit                      ║") 
+    print("║  3. Search hashes in a dir    ║")
+    print("║  4. Exit                      ║")
     print("╚═══════════════════════════════╝")
 
 # Main function
 def main():
-    parser = argparse.ArgumentParser(description='Hash cracker CLI tool')
-    parser.add_argument('-c', '--crack', metavar='HASH', help='Crack a single hash')
-    parser.add_argument('-f', '--file', metavar='FILE', help='Crack hashes from a file')
+    while True:
+        display_menu()
+        choice = input(f"{info} Enter your choice (1-4): ")
 
-    args = parser.parse_args()
-
-    if args.crack:
-        single(args.crack)
-    elif args.file:
-        thread_count = input(f"{info} Enter the number of threads (default is 4): ")
-        thread_count = int(thread_count) if thread_count.isdigit() else 4
-        miner(args.file, thread_count)
-    else:
-        while True:
-            display_menu()
-            choice = input(f"{info} Enter your choice (1-3): ")
-
-            if choice == '1':
-                hashvalue = input(f"{info} Enter the hash to crack: ")
-                single(hashvalue)
-            elif choice == '2':
-                file_path = input(f"{info} Enter the path to the input file: ")
-                thread_count = input(f"{info} Enter the number of threads (default is 4): ")
-                thread_count = int(thread_count) if thread_count.isdigit() else 4
+        if choice == '1':
+            hashvalue = input(f"{info} Enter the hash to crack: ")
+            single(hashvalue)
+        elif choice == '2':
+            root = tk.Tk()
+            root.withdraw()
+            file_path = filedialog.askopenfilename(
+                filetypes=[("Text files", "*.txt")])
+            if file_path:
+                thread_count = input(
+                    f"{info} Enter the number of threads (default is 4): ")
+                thread_count = int(
+                    thread_count) if thread_count.isdigit() else 4
                 miner(file_path, thread_count)
-            elif choice == '3':
-                print(f"{info} Exiting...")
-                break
             else:
-                print(f"{bad} Invalid choice. Please enter a number between 1 and 3.")
+                print(f"{bad} No file selected.")
+        elif choice == '3':
+            directory_path = input(f"{info} Enter the path to the directory: ")
+            grepper(directory_path)
+        elif choice == '4':
+            print(f"{info} Exiting...")
+            break
+        else:
+            print(f"{bad} Invalid choice. Please enter a number between 1 and 4.")
+
 
 if __name__ == '__main__':
     main()
