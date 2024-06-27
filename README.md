@@ -1,6 +1,6 @@
 # Advanced Hash Cracker
 
-An advanced hash cracking tool with support for multiple hashing algorithms, multithreading, and integration with online hash cracking APIs.
+An advanced hash cracking CLI tool with support for multiple hashing algorithms, multithreading, and integration with online hash cracking APIs.
 
 ## Features
 - Supports MD5, SHA-1, SHA-256, SHA-384, and SHA-512
